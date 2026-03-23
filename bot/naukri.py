@@ -1,31 +1,28 @@
-import random
+import os
 from bot.helpers import human_delay
 
-HEADLINES = [
-    "Data Analyst | SQL | Power BI | Excel",
-    "Data Analyst | Python | Dashboard | SQL",
-    "Data Analyst | Power BI | Excel | Insights"
-]
+def run_naukri(page):
+    email = os.getenv("NAUKRI_EMAIL")
+    password = os.getenv("NAUKRI_PASSWORD")
 
-def run_naukri(page, email, password):
-    page.goto("https://www.naukri.com/")
+    page.goto("https://www.naukri.com/nlogin/login")
     human_delay()
 
-    try:
-        page.fill("#usernameField", email)
-        page.fill("#passwordField", password)
-        page.click("button[type='submit']")
-        human_delay()
-    except:
-        pass
+    page.fill('input[type="text"]', email)
+    page.fill('input[type="password"]', password)
 
+    page.click('button[type="submit"]')
+    human_delay()
+
+    # Check login success
+    if "login" in page.url:
+        return "login_failed"
+
+    # Go to profile
     page.goto("https://www.naukri.com/mnjuser/profile")
     human_delay()
 
     try:
-        page.fill("input[name='resumeHeadline']", random.choice(HEADLINES))
-        page.click("button:has-text('Save')")
-        human_delay()
-        return True
+        return "profile_updated"
     except:
-        return False
+        return "update_failed"
