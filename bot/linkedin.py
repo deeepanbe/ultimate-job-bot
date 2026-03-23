@@ -1,42 +1,41 @@
-from bot.helpers import human_delay, safe_click
+import os
+from bot.helpers import human_delay
 
-def run_linkedin(page, email, password, max_apply=5):
-    results = {"posted": False, "applied": 0}
+def run_linkedin(page):
+    email = os.getenv("LINKEDIN_EMAIL")
+    password = os.getenv("LINKEDIN_PASSWORD")
 
     page.goto("https://www.linkedin.com/login")
-    page.fill("#username", email)
-    page.fill("#password", password)
-    page.click("button[type=submit]")
     human_delay()
 
+    page.fill('input[name="session_key"]', email)
+    page.fill('input[name="session_password"]', password)
+
+    page.click('button[type="submit"]')
+    human_delay()
+
+    # CAPTCHA check
+    if "captcha" in page.content().lower():
+        return "captcha_detected"
+
+    # Go to feed
     page.goto("https://www.linkedin.com/feed/")
     human_delay()
 
-    if safe_click(page, "button:has-text('Start a post')"):
+    # Create post
+    post_text = "Actively exploring Data Analyst roles | SQL | Power BI | Excel | Python"
+
+    try:
+        page.click("button[aria-label='Start a post']")
         human_delay()
-        page.fill("div[role='textbox']",
-                  "Actively seeking Data Analyst roles | SQL | Power BI | Excel | Python")
-        safe_click(page, "button:has-text('Post')")
-        results["posted"] = True
+
+        page.fill("div[role='textbox']", post_text)
         human_delay()
 
-    page.goto("https://www.linkedin.com/jobs/search/?keywords=Data%20Analyst")
-    human_delay()
+        page.click("button[aria-label='Post']")
+        human_delay()
 
-    jobs = page.locator("a.job-card-container").all()[:max_apply]
+        return "posted"
 
-    for job in jobs:
-        try:
-            job.click()
-            human_delay()
-
-            if safe_click(page, "button:has-text('Easy Apply')"):
-                human_delay()
-
-                if safe_click(page, "button:has-text('Submit')"):
-                    results["applied"] += 1
-                    human_delay()
-        except:
-            continue
-
-    return results
+    except:
+        return "post_failed"
